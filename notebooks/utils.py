@@ -8,12 +8,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold, train_test_split
 from pycaret.regression import *
 from mrmr import mrmr_regression
-from typing import Union
-
-target = 'Sitlav - Soybeans - Yield - KG/Ha'
+from typing import Union, List,Optional,Tuple, Any
 
 
-def filter_nans(df: pd.DataFrame, row_trashold: float = 0.5, col_trashold: float = 0.7) -> pd.DataFrame:
+
+def filter_nans(df: pd.DataFrame, row_threshold: float = 0.5, col_threshold: float = 0.7) -> pd.DataFrame:
     """
     Filter out rows and columns containing too many NaNs.
 
@@ -26,14 +25,14 @@ def filter_nans(df: pd.DataFrame, row_trashold: float = 0.5, col_trashold: float
         pd.DataFrame: The filtered DataFrame.
     """
     df = df.dropna(subset=['plot code']).drop(columns=['Season code'])
-    row_nan_trashold = df.shape[1] * row_trashold
+    row_nan_trashold = df.shape[1] * row_threshold
     df = df.dropna(axis=0, thresh=int(row_nan_trashold))
-    col_nan_trashold = df.shape[0] * col_trashold
+    col_nan_trashold = df.shape[0] * col_threshold
     df = df.dropna(axis=1, thresh=int(col_nan_trashold))
     return df
 
 
-def clean_target_colunm(df: pd.DataFrame, target: str, mul_std: float = 2.5) -> pd.DataFrame:
+def clean_target_column(df: pd.DataFrame, target: str, mul_std: float = 2.5) -> pd.DataFrame:
     """
     Remove outliers from the target column of the DataFrame.
 
@@ -172,9 +171,12 @@ def feature_selection(df: pd.DataFrame, target: str ='Sitlav - Soybeans - Yield 
         A list containing the names of the selected features.
 
     """
-    X1 = df.drop(columns=['plot code','CLASSE_DOM'])
+    X1 = df.drop(columns=['plot code'])#,'CLASSE_DOM','Season code'], errors = 'ignore')
     Y1 = df[target]
-    return mrmr_regression(X=X1, y=Y1, K=number_of_features)
+    selected_columns = mrmr_regression(X=X1, y=Y1, K=number_of_features, cat_features=['CLASSE_DOM','Season code'])
+    df = df[selected_columns + [target]]
+    return df 
+
 
 def creat_pycaret_models(df: pd.DataFrame, target: str, features: Optional[List[str]]=None) -> Tuple[Any, pd.DataFrame]:
     """
